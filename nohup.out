@@ -1,0 +1,9 @@
+Server Started : 2014-07-22 11:33:29
+Listening on   : 127.0.0.1 port 9501
+PHP Warning:  socket_write() expects parameter 1 to be resource, null given in /home/godtou/site/websocket/server/socket.php on line 239
+PHP Warning:  socket_write() expects parameter 1 to be resource, null given in /home/godtou/site/websocket/server/socket.php on line 239
+key:53cddb8f98950 close
+PHP Warning:  socket_write() expects parameter 1 to be resource, null given in /home/godtou/site/websocket/server/socket.php on line 239
+PHP Warning:  socket_write() expects parameter 1 to be resource, null given in /home/godtou/site/websocket/server/socket.php on line 239
+key:53cddb9621b2e close
+PHP Warning:  socket_write() expects parameter 1 to be resource, null given in /home/godtou/site/websocket/server/socket.php on line 239
