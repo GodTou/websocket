@@ -24,35 +24,35 @@ while (true) {
     $changed = get_sockets($clients);
     //returns the socket resources in $changed array
     socket_select($changed, $write, $read, 0, 10);
-    
+
     //check for new socket
     if (in_array($socket, $changed)) {
         $socket_new = socket_accept($socket); //accpet new socket
         $index = uniqid();
         $clients[$index]['socket'] = $socket_new; //add socket to client array
         $clients[$index]['name'] = "all";
-        
+
         $header = socket_read($socket_new, 1024); //read data sent by the socket
         perform_handshaking($header, $socket_new, $host, $port); //perform websocket handshake
-        
+
         socket_getpeername($socket_new, $ip); //get ip address of connected socket
         $clients[$index]['ip'] = $ip;
         //$response = array('type'=>'system', 'message'=>$ip.' connected'); //prepare json data
         //send_message($response); //notify all users about new connection
-        
+
         //make room for new socket
         $found_socket = array_search($socket, $changed);
         unset($changed[$found_socket]);
     }
-    
+
     //loop through all connected sockets
-    foreach ($changed as $changed_socket) {    
-        
+    foreach ($changed as $changed_socket) {
+
         //check for any incomming data
         while(socket_recv($changed_socket, $buf, 1024, 0) >= 1)
         {
             $received_text = unmask($buf); //unmask data
-            $tst_msg = json_decode($received_text); //json decode 
+            $tst_msg = json_decode($received_text); //json decode
             $user_name = $tst_msg->name; //sender name
             $type = $tst_msg->type;
             if ($type == "msg") {
@@ -61,7 +61,7 @@ while (true) {
                 $user_color = $tst_msg->color; //color
                 $user_message = $tst_msg->message; //message text
             }
-            
+
             if ($type == "setName" || $type == "msg") {
                 $found_socket = search_array($changed_socket, $clients);
                 $clients[$found_socket]['name'] = $user_name;
@@ -77,12 +77,12 @@ while (true) {
             }
             break 2; //exist this loop
         }
-        
+
         $buf = @socket_read($changed_socket, 1024, PHP_NORMAL_READ);
         if ($buf === false) { // check disconnected client
             // remove client for $clients array
             $found_socket = search_array($changed_socket, $clients);
-            
+
             //notify all users about disconnected connection
             $response = array('type'=>'system', 'message'=>$clients[$found_socket]['ip'].' disconnected');
             unset($clients[$found_socket]);
@@ -139,7 +139,7 @@ function mask($text)
 {
     $b1 = 0x80 | (0x1 & 0x0f);
     $length = strlen($text);
-    
+
     if($length <= 125)
         $header = pack('CC', $b1, $length);
     elseif($length > 125 && $length < 65536)
