@@ -26,11 +26,12 @@ function vcho($msg) {
     
     $payload = json_encode(array(
         'name' => $location['file'],
+        //'name' => "aaa",
         'time' => "[" . date("Y-m-d H:i:s") . "]",
         'line' => $location['line'],
         'message' => $msg,
         'color' => 'FF7000',
-        'type' => 'logmsg'
+        'type' => 'msg'
     ));
     
     $client->sendData($payload);

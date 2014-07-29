@@ -2,6 +2,7 @@
 $host = 'localhost'; //host
 $port = '9000'; //port
 $null = NULL; //null var
+$colours = array('007AFF','FF7000','FF7000','15E25F','CFC700','CFC700','CF1100','CF00BE','F00');
 
 //Create TCP/IP sream socket
 $socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
@@ -35,10 +36,9 @@ while (true) {
         perform_handshaking($header, $socket_new, $host, $port); //perform websocket handshake
         
         socket_getpeername($socket_new, $ip); //get ip address of connected socket
+        $clients[$index]['ip'] = $ip;
         //$response = array('type'=>'system', 'message'=>$ip.' connected'); //prepare json data
         //send_message($response); //notify all users about new connection
-        $response = array('type'=>'setFilter', 'message'=>$clients); //prepare json data
-        send_message($response); //send data
         
         //make room for new socket
         $found_socket = array_search($socket, $changed);
@@ -54,18 +54,24 @@ while (true) {
             $received_text = unmask($buf); //unmask data
             $tst_msg = json_decode($received_text); //json decode 
             $user_name = $tst_msg->name; //sender name
-            $user_message = $tst_msg->message; //message text
-            $user_color = $tst_msg->color; //color
-            $time = $tst_msg->time;
-            $line = $tst_msg->line;
             $type = $tst_msg->type;
+            if ($type == "msg") {
+                $time = $tst_msg->time;
+                $line = $tst_msg->line;
+                $user_color = $tst_msg->color; //color
+                $user_message = $tst_msg->message; //message text
+            }
             
-            if ($type == "setName") {
+            if ($type == "setName" || $type == "msg") {
                 $found_socket = search_array($changed_socket, $clients);
                 $clients[$found_socket]['name'] = $user_name;
             }
+            // 设置下拉菜单
+            $response = array('type'=>'setFilter', 'message'=>get_names($clients)); //prepare json data
+            send_message($response); //send data
+
             //prepare data to be sent to client
-            if ($type == 'logmsg') {
+            if ($type == 'msg') {
                 $response_text = array('type'=>$type, 'name'=>$user_name, 'message'=>$user_message, 'color'=>$user_color, 'time'=>$time, 'line' => $line);
                 send_message($response_text); //send data
             }
@@ -76,12 +82,12 @@ while (true) {
         if ($buf === false) { // check disconnected client
             // remove client for $clients array
             $found_socket = search_array($changed_socket, $clients);
-            socket_getpeername($changed_socket, $ip);
-            unset($clients[$found_socket]);
             
             //notify all users about disconnected connection
-            $response = array('type'=>'system', 'message'=>$ip.' disconnected');
-            send_message($response);
+            $response = array('type'=>'system', 'message'=>$clients[$found_socket]['ip'].' disconnected');
+            unset($clients[$found_socket]);
+            //send_message($response);
+            //TODO log message
         }
     }
 }
@@ -90,14 +96,15 @@ socket_close($sock);
 
 function send_message($msg)
 {
-    var_dump($msg);
     global $clients;
     $finalMsg = mask(json_encode($msg));
-    var_dump(json_encode($msg));
-    var_dump($finalMsg);
-    foreach($clients as $changed_socket)
+    foreach($clients as $key => $changed_socket)
     {
-        if (!$msg['type'] != "msg" || $changed_socket['name'] == $msg['name'] || $changed_socket['name'] == "all") {
+        if ($key == 0) {
+            continue;
+        }
+
+        if ($msg['type'] != "msg" || $changed_socket['name'] == $msg['name'] || $changed_socket['name'] == "all") {
             @socket_write($changed_socket['socket'],$finalMsg,strlen($finalMsg));
         }
     }
@@ -182,5 +189,16 @@ function get_sockets($clients) {
         $result[] = $client['socket'];
     }
     return $result;
+}
+
+function get_names($clients) {
+    $result = "";
+    foreach ($clients as $key => $client) {
+        if ($key == 0) {
+            continue;
+        }
+        $result .= $client['name'] . ",";
+    }
+    return trim($result, ",");
 }
 

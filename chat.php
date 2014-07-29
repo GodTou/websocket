@@ -6,7 +6,7 @@
 <!--
 .chat_wrapper {
 	width: 95%;
-    height: 700px;
+    height: 600px;
 	margin-right: auto;
 	margin-left: auto;
 	background: #CCCCCC;
@@ -15,7 +15,7 @@
 	font: 12px 'lucida grande',tahoma,verdana,arial,sans-serif;
 }
 .chat_wrapper .message_box {
-    height: 660px;
+    height: 560px;
 	background: #FFFFFF;
 	overflow: auto;
 	padding: 10px;
@@ -34,12 +34,9 @@
 </style>
 </head>
 <body>	
-<?php 
-$colours = array('007AFF','FF7000','FF7000','15E25F','CFC700','CFC700','CF1100','CF00BE','F00');
-$user_colour = array_rand($colours);
-?>
 
 <script src="./static/jquery.js"></script>
+<script src="http://ajax.cdnjs.com/ajax/libs/json2/20110223/json2.js"></script>
 
 <script language="javascript" type="text/javascript">  
 $(document).ready(function(){
@@ -54,10 +51,10 @@ $(document).ready(function(){
     $('#setFilter').change(function() {
         var name = $(this).val();
         var msg = {
-            type:"setName",
-            name:name
+            type: "setName",
+            name: name
         };
-        websocket.send(JSON.stringfy(msg));
+        websocket.send(JSON.stringify(msg));
     });
 	//$('#send-btn').click(function(){ //use clicks message send button	
 	//	var mymessage = $('#message').val(); //get message text
@@ -79,8 +76,7 @@ $(document).ready(function(){
 	//	color : '<?php echo $colours[$user_colour]; ?>'
 	//	};
 	//	//convert and send data to server
-	//	websocket.send(JSON.stringify(msg));
-	//});
+	//	websocket.send(JSON.stringify(msg)); //});
 	
 	//#### Message received from server?
 	websocket.onmessage = function(ev) {
@@ -92,7 +88,7 @@ $(document).ready(function(){
         var time = msg.time;
         var line = msg.line;
 
-		if(type == 'logmsg') 
+		if(type == 'msg') 
 		{
 			$('#message_box').append("<div><span class=\"user_name\" style=\"color:#"+ucolor+"\">"+time+fileName+" on line "+line+"</span> :<br> <span class=\"user_message\">"+umsg+"</span></div>");
 		}
@@ -102,10 +98,18 @@ $(document).ready(function(){
 		}
 
         if (type == 'setFilter') {
-            var html = "";
-            var filterData = JSON.parse(ev.data);
-            for( i in filterData) {
-                html += "<option value='"+i.name+"'>"+i.name+"</option>";
+            var currentFilter = $("#setFilter").val();
+            var html = "<option value='all'>Filter None</option>";
+            if (currentFilter != 'all') {
+                html += "<option value='"+currentFilter+"' selected>"+currentFilter+"</option>"
+            }
+            var str = new Array();
+            str = umsg.split(',');
+            for (i=0;i<str.length ;i++ ) {
+                if (str[i] == "all" || str[i] == currentFilter) {
+                    continue;
+                }
+                html += "<option value='"+str[i]+"'>"+str[i]+"</option>";
             }
             $("#setFilter").html(html);
         }
@@ -125,8 +129,8 @@ Filter：
 <select name="filter" id="setFilter">
     <option value="all">Filter None</option>
 </select>
-<input type="text" name="searchBox" id="searchBox" placeholder="Search Info"/>
-<button id="send-btn">Search</button>
+<!--<input type="text" name="searchBox" id="searchBox" placeholder="Search Info"/>
+<button id="send-btn">Search</button>-->
 </div>
 </div>
 
