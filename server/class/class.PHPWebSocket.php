@@ -86,6 +86,7 @@ class PHPWebSocket
             9 => string    FrameBuffer,                       // joined onto end as a frame's data comes in, reset to blank string when all frame data has been read
             10 => integer  MessageOpcode,                     // stored by the first frame for fragmented messages, default value is 0
             11 => integer  MessageBufferLength                // the payload data length of MessageBuffer
+            12 => string   Name
         )
 
         $wsRead[ integer ClientID ] = resource Socket         // this one-dimensional array is used for socket_select()
@@ -127,8 +128,7 @@ class PHPWebSocket
             if ($result === false) {
                 socket_close($this->wsRead[0]);
                 return false;
-            }
-            elseif ($result > 0) {
+            } elseif ($result > 0) {
                 foreach ($changed as $clientID => $socket) {
                     if ($clientID != 0) {
                         // client socket changed
