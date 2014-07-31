@@ -4,8 +4,8 @@ error_reporting(E_ALL);
 
 /**
  * Very basic websocket client.
- * Supporting draft hybi-10. 
- * 
+ * Supporting draft hybi-10.
+ *
  * @author Simon Samtleben <web@lemmingzshadow.net>
  * @version 2011-10-18
  */
@@ -18,9 +18,9 @@ class SocketClient
     private $_origin;
     private $_Socket = null;
     private $_connected = false;
-    
+
     public function __construct() { }
-    
+
     public function __destruct()
     {
         $this->disconnect();
@@ -36,22 +36,22 @@ class SocketClient
         {
             return false;
         }
-        $res = socket_write($this->_Socket, $this->_hybi10Encode($data, $type, $masked));        
+        $res = socket_write($this->_Socket, $this->_hybi10Encode($data, $type, $masked));
         if($res === 0 || $res === false)
         {
             return false;
-        }        
+        }
 
         //while ($buff = socket_read($this->_Socket, 1024, PHP_BINARY_READ)) {
         //    var_dump($buff);
-        //    echo("Response was:" . $buff . "\n"); 
+        //    echo("Response was:" . $buff . "\n");
         //}
         //$buffer = ' ';
         //while($buffer !== '')
-        //{            
+        //{
         //    $buffer = fread($this->_Socket, 512);
         //}
-        
+
         return true;
     }
 
@@ -61,8 +61,8 @@ class SocketClient
         $this->_port = $port;
         $this->_path = $path;
         $this->_origin = $origin;
-        
-        $key = base64_encode($this->_generateRandomString(16, false, true));                
+
+        $key = base64_encode($this->_generateRandomString(16, false, true));
         $header = "GET " . $path . " HTTP/1.1\r\n";
         $header.= "Host: ".$host.":".$port."\r\n";
         $header.= "Upgrade: websocket\r\n";
@@ -72,42 +72,42 @@ class SocketClient
         {
             $header.= "Sec-WebSocket-Origin: " . $origin . "\r\n";
         }
-        $header.= "Sec-WebSocket-Version: 13\r\n";            
+        $header.= "Sec-WebSocket-Version: 13\r\n";
         $this->_Socket = socket_create(AF_INET, SOCK_STREAM, SOL_TCP);
         $connection = socket_connect($this->_Socket, $host, $port);
         //socket_set_timeout($this->_Socket, 0, 10000);
-        socket_write($this->_Socket, $header); 
-        $response = socket_read($this->_Socket, 1500, PHP_BINARY_READ);        
+        socket_write($this->_Socket, $header);
+        $response = socket_read($this->_Socket, 1500, PHP_BINARY_READ);
 
         if (!preg_match('/Sec-WebSocket-Accept:\s(.*)/', $response, $matches)) {
             return false;
         }
         $keyAccept = trim($matches[1]);
         $expectedResonse = base64_encode(pack('H*', sha1($key . '258EAFA5-E914-47DA-95CA-C5AB0DC85B11')));
-        
+
         $this->_connected = ($keyAccept === $expectedResonse) ? true : false;
-        return $this->_connected;    
+        return $this->_connected;
     }
-    
+
     public function checkConnection()
     {
         $this->_connected = false;
-        
+
         // send ping:
         $data = 'ping?';
         @fwrite($this->_Socket, $this->_hybi10Encode($data, 'ping', true));
         $response = @fread($this->_Socket, 300);
         if(empty($response))
-        {            
+        {
             return false;
         }
         $response = $this->_hybi10Decode($response);
         if(!is_array($response))
-        {            
+        {
             return false;
         }
         if(!isset($response['type']) || $response['type'] !== 'pong')
-        {            
+        {
             return false;
         }
         $this->_connected = true;
@@ -120,20 +120,20 @@ class SocketClient
         $this->_connected = false;
         socket_close($this->_Socket);
     }
-    
+
     public function reconnect()
     {
         sleep(10);
         $this->_connected = false;
         socket_close($this->_Socket);
-        $this->connect($this->_host, $this->_port, $this->_path, $this->_origin);        
+        $this->connect($this->_host, $this->_port, $this->_path, $this->_origin);
     }
 
     private function _generateRandomString($length = 10, $addSpaces = true, $addNumbers = true)
-    {  
+    {
         $characters = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ!"§$%&/()=[]{}';
         $useChars = array();
-        // select some random chars:    
+        // select some random chars:
         for($i = 0; $i < $length; $i++)
         {
             $useChars[] = $characters[mt_rand(0, strlen($characters)-1)];
@@ -152,37 +152,37 @@ class SocketClient
         $randomString = substr($randomString, 0, $length);
         return $randomString;
     }
-    
+
     private function _hybi10Encode($payload, $type = 'text', $masked = true)
     {
         $frameHead = array();
         $frame = '';
         $payloadLength = strlen($payload);
-        
+
         switch($type)
-        {        
+        {
             case 'text':
                 // first byte indicates FIN, Text-Frame (10000001):
-                $frameHead[0] = 129;                
-            break;            
-        
+                $frameHead[0] = 129;
+            break;
+
             case 'close':
                 // first byte indicates FIN, Close Frame(10001000):
                 $frameHead[0] = 136;
             break;
-        
+
             case 'ping':
                 // first byte indicates FIN, Ping frame (10001001):
                 $frameHead[0] = 137;
             break;
-        
+
             case 'pong':
                 // first byte indicates FIN, Pong frame (10001010):
                 $frameHead[0] = 138;
             break;
         }
-        
-        // set mask and payload length (using 1, 3 or 9 bytes) 
+
+        // set mask and payload length (using 1, 3 or 9 bytes)
         if($payloadLength > 65535)
         {
             $payloadLengthBin = str_split(sprintf('%064b', $payloadLength), 8);
@@ -223,66 +223,66 @@ class SocketClient
             {
                 $mask[$i] = chr(rand(0, 255));
             }
-            
-            $frameHead = array_merge($frameHead, $mask);            
-        }                        
+
+            $frameHead = array_merge($frameHead, $mask);
+        }
         $frame = implode('', $frameHead);
 
         // append payload to frame:
-        $framePayload = array();    
+        $framePayload = array();
         for($i = 0; $i < $payloadLength; $i++)
-        {        
+        {
             $frame .= ($masked === true) ? $payload[$i] ^ $mask[$i % 4] : $payload[$i];
         }
 
         return $frame;
     }
-    
+
     private function _hybi10Decode($data)
     {
         $payloadLength = '';
         $mask = '';
         $unmaskedPayload = '';
         $decodedData = array();
-        
+
         // estimate frame type:
-        $firstByteBinary = sprintf('%08b', ord($data[0]));        
+        $firstByteBinary = sprintf('%08b', ord($data[0]));
         $secondByteBinary = sprintf('%08b', ord($data[1]));
         $opcode = bindec(substr($firstByteBinary, 4, 4));
         $isMasked = ($secondByteBinary[0] == '1') ? true : false;
-        $payloadLength = ord($data[1]) & 127;        
-        
+        $payloadLength = ord($data[1]) & 127;
+
         switch($opcode)
         {
             // text frame:
             case 1:
-                $decodedData['type'] = 'text';                
+                $decodedData['type'] = 'text';
             break;
-        
+
             case 2:
                 $decodedData['type'] = 'binary';
             break;
-            
+
             // connection close frame:
             case 8:
                 $decodedData['type'] = 'close';
             break;
-            
+
             // ping frame:
             case 9:
-                $decodedData['type'] = 'ping';                
+                $decodedData['type'] = 'ping';
             break;
-            
+
             // pong frame:
             case 10:
                 $decodedData['type'] = 'pong';
             break;
-            
+
             default:
                 return false;
             break;
         }
-        
+
         if($payloadLength === 126)
         {
            $mask = substr($data, 4, 4);
@@ -303,11 +303,11 @@ class SocketClient
         }
         else
         {
-            $mask = substr($data, 2, 4);    
+            $mask = substr($data, 2, 4);
             $payloadOffset = 6;
             $dataLength = $payloadLength + $payloadOffset;
-        }    
-        
+        }
+
         if($isMasked === true)
         {
             for($i = $payloadOffset; $i < $dataLength; $i++)
@@ -325,7 +325,7 @@ class SocketClient
             $payloadOffset = $payloadOffset - 4;
             $decodedData['payload'] = substr($data, $payloadOffset);
         }
-        
+
         return $decodedData;
     }
 }
